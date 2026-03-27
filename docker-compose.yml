@@ -12,4 +12,4 @@ services:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
       PORT: 3001
-      IMAGE_GENERATE_ENDPOINT: ${IMAGE_GENERATE_ENDPOINT:-https://n8n.taskracer.id.vn/webhook-test/cindy-workflow}
+      IMAGE_GENERATE_ENDPOINT: ${IMAGE_GENERATE_ENDPOINT:-https://n8n.taskracer.id.vn/webhook/cindy-workflow}
