@@ -2,10 +2,11 @@ import { randomInt } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
-import { GENDER_OPTIONS, type CampaignConceptId, type Gender, isCampaignConceptEnabled, isCampaignConceptId } from "@/lib/campaign";
+import { GENDER_OPTIONS, getConceptById, type CampaignConceptId, type Gender, isCampaignConceptEnabled, isCampaignConceptId } from "@/lib/campaign";
 import { waitForRemoteImageAvailability } from "@/lib/remote-image";
 
 const DEFAULT_ENDPOINT = "https://n8n.taskracer.id.vn/webhook/cindy-workflow";
+const PUBLIC_MUSIC_ROOT_DIR = path.join(process.cwd(), "public", "music");
 const PUBLIC_SOURCE_ROOT_DIR = path.join(process.cwd(), "public", "source");
 
 type JsonRecord = Record<string, unknown>;
@@ -21,9 +22,11 @@ type NormalizedGenerateResponse = {
   imageUrl: string | null;
   jobId: string | null;
   message: string | null;
+  mediaType: "image" | "video";
   provider: string | null;
   status: string | null;
   taskId: string | null;
+  url: string | null;
   viewUrl: string | null;
 };
 
@@ -36,7 +39,7 @@ export async function POST(request: Request) {
   const photo = formData.get("photo");
 
   if (typeof name !== "string" || typeof phone !== "string" || typeof gender !== "string" || typeof concept !== "string" || !(photo instanceof File)) {
-    return NextResponse.json({ message: "Thiếu dữ liệu bắt buộc để tạo ảnh." }, { status: 400 });
+    return NextResponse.json({ message: "Thiếu dữ liệu bắt buộc để tạo video." }, { status: 400 });
   }
 
   if (!isGender(gender) || !isCampaignConceptId(concept)) {
@@ -51,11 +54,12 @@ export async function POST(request: Request) {
 
   try {
     const targetImage = await resolveTargetImage(concept, gender);
+    const backgroundAudio = await resolveBackgroundAudio();
 
     if (!targetImage) {
       return NextResponse.json(
         {
-          message: "Tạo ảnh gặp sự cố, vui lòng thử lại.",
+          message: "Tạo video gặp sự cố, vui lòng thử lại.",
         },
         { status: 500 },
       );
@@ -65,6 +69,10 @@ export async function POST(request: Request) {
     const targetImageBytes = Uint8Array.from(targetImage.buffer);
     upstreamFormData.set("target_image", new Blob([targetImageBytes], { type: targetImage.mimeType }), targetImage.fileName);
     upstreamFormData.set("source_image", photo, photo.name || "source-image");
+    if (backgroundAudio) {
+      const audioBytes = Uint8Array.from(backgroundAudio.buffer);
+      upstreamFormData.set("audio", new Blob([audioBytes], { type: backgroundAudio.mimeType }), backgroundAudio.fileName);
+    }
 
     const upstreamResponse = await fetch(endpoint, {
       method: "POST",
@@ -78,13 +86,13 @@ export async function POST(request: Request) {
       const payload = await upstreamResponse.json();
       const normalizedResponse = normalizeGenerateResponse(payload);
 
-      if (normalizedResponse.imageUrl) {
-        const isImageReady = await waitForRemoteImageAvailability(normalizedResponse.imageUrl);
+      if (normalizedResponse.url) {
+        const isAssetReady = await waitForRemoteImageAvailability(normalizedResponse.url);
 
-        if (!isImageReady) {
+        if (!isAssetReady) {
           return NextResponse.json(
             {
-              message: "Tạo ảnh gặp sự cố, vui lòng thử lại.",
+              message: "Tạo video gặp sự cố, vui lòng thử lại.",
               provider: normalizedResponse.provider,
               status: normalizedResponse.status,
               upstreamStatus: upstreamResponse.status,
@@ -98,7 +106,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json(
         {
-          message: normalizedResponse.message ?? "Tạo ảnh gặp sự cố, vui lòng thử lại.",
+          message: normalizedResponse.message ?? "Tạo video gặp sự cố, vui lòng thử lại.",
           provider: normalizedResponse.provider,
           status: normalizedResponse.status,
           upstreamStatus: upstreamResponse.status,
@@ -122,7 +130,7 @@ export async function POST(request: Request) {
     if (!upstreamResponse.ok) {
       return NextResponse.json(
         {
-          message: "Tạo ảnh gặp sự cố, vui lòng thử lại.",
+          message: "Tạo video gặp sự cố, vui lòng thử lại.",
           upstreamStatus: upstreamResponse.status,
         },
         { status: upstreamResponse.status },
@@ -131,7 +139,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        message: "Tạo ảnh gặp sự cố, vui lòng thử lại.",
+        message: "Tạo video gặp sự cố, vui lòng thử lại.",
         responseType: contentType || "unknown",
       },
       { status: 502 },
@@ -139,7 +147,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json(
       {
-        message: "Tạo ảnh gặp sự cố, vui lòng thử lại.",
+        message: "Tạo video gặp sự cố, vui lòng thử lại.",
       },
       { status: 502 },
     );
@@ -147,8 +155,9 @@ export async function POST(request: Request) {
 }
 
 async function resolveTargetImage(conceptId: CampaignConceptId, gender: Gender): Promise<ResolvedTargetImage | null> {
-  const sourceDirectory = path.join(PUBLIC_SOURCE_ROOT_DIR, conceptId, getGenderDirectoryName(gender));
-  const files = await readImageFiles(sourceDirectory);
+  const concept = getConceptById(conceptId);
+  const sourceDirectory = path.join(PUBLIC_SOURCE_ROOT_DIR, concept.sourceDirectory, getGenderDirectoryName(gender));
+  const files = await readDirectoryFiles(sourceDirectory, isSupportedImageExtension);
 
   if (files.length === 0) {
     return null;
@@ -165,17 +174,35 @@ async function resolveTargetImage(conceptId: CampaignConceptId, gender: Gender):
   };
 }
 
+async function resolveBackgroundAudio(): Promise<ResolvedTargetImage | null> {
+  const files = await readDirectoryFiles(PUBLIC_MUSIC_ROOT_DIR, isSupportedAudioExtension);
+
+  if (files.length === 0) {
+    return null;
+  }
+
+  const matchedFile = files[randomInt(files.length)];
+  const fullPath = path.join(PUBLIC_MUSIC_ROOT_DIR, matchedFile);
+  const buffer = await readFile(fullPath);
+
+  return {
+    buffer,
+    fileName: matchedFile,
+    mimeType: getAudioMimeType(path.extname(matchedFile)),
+  };
+}
+
 function getGenderDirectoryName(gender: Gender) {
   return gender === "female" ? "female" : "male";
 }
 
-async function readImageFiles(directory: string) {
+async function readDirectoryFiles(directory: string, isSupportedExtension: (extension: string) => boolean) {
   try {
     const entries = await readdir(directory, { withFileTypes: true });
     return entries
       .filter((entry) => entry.isFile())
       .map((entry) => entry.name)
-      .filter((fileName) => isSupportedImageExtension(path.extname(fileName)));
+      .filter((fileName) => isSupportedExtension(path.extname(fileName)));
   } catch {
     return [];
   }
@@ -188,42 +215,60 @@ function normalizeGenerateResponse(payload: unknown): NormalizedGenerateResponse
   const primaryDownload = downloads?.find((download) => readString(download.url)) ?? null;
   const status = readString(rootPayload?.status) ?? readString(data?.status) ?? null;
   const provider = readString(rootPayload?.provider) ?? readString(data?.provider) ?? null;
-  const candidateImageUrl = readString(rootPayload?.imageUrl) ?? readString(rootPayload?.image_url) ?? readString(data?.imageUrl) ?? readString(data?.image_url) ?? readString(rootPayload?.url) ?? readString(data?.url) ?? readString(primaryDownload?.url);
+  const candidateUrl = readString(rootPayload?.url) ?? readString(data?.url) ?? readString(rootPayload?.imageUrl) ?? readString(rootPayload?.image_url) ?? readString(data?.imageUrl) ?? readString(data?.image_url) ?? readString(primaryDownload?.url);
   const expiredAt = readString(primaryDownload?.expires_at) ?? readString(primaryDownload?.expiresAt) ?? readString(rootPayload?.expired_at) ?? readString(rootPayload?.expiredAt) ?? readString(data?.expired_at) ?? readString(data?.expiredAt) ?? null;
   const jobId = readString(rootPayload?.job_id) ?? readString(rootPayload?.jobId) ?? readString(data?.job_id) ?? readString(data?.jobId) ?? null;
   const taskId = readString(rootPayload?.task_id) ?? readString(rootPayload?.taskId) ?? readString(data?._id) ?? readString(data?.task_id) ?? readString(data?.taskId) ?? null;
   const rawMessage = readString(rootPayload?.message) ?? readString(rootPayload?.msg) ?? readString(rootPayload?.error) ?? readString(data?.message) ?? readString(data?.msg) ?? readString(data?.error) ?? null;
-  const imageUrl = canUseGeneratedImage(status) ? candidateImageUrl : null;
+  const url = canUseGeneratedAsset(status) ? candidateUrl : null;
+  const mediaType = inferMediaType(url);
+  const imageUrl = mediaType === "image" ? url : null;
   const message = normalizeGenerateMessage({
-    hasImageUrl: Boolean(imageUrl),
+    hasAssetUrl: Boolean(url),
     rawMessage,
     status,
   });
 
   return {
     imageUrl,
-    viewUrl: imageUrl,
     expiredAt,
     message,
     jobId,
+    mediaType,
     provider,
     status,
     taskId,
+    url,
+    viewUrl: url,
   };
 }
 
-function canUseGeneratedImage(status: string | null) {
+function canUseGeneratedAsset(status: string | null) {
   if (!status) return true;
 
   return ["success", "complete", "completed"].includes(status.toLowerCase());
 }
 
-function normalizeGenerateMessage({ hasImageUrl, rawMessage, status }: { hasImageUrl: boolean; rawMessage: string | null; status: string | null }) {
-  if (hasImageUrl && canUseGeneratedImage(status)) {
-    return "Hệ thống đã tạo ảnh thành công.";
+function normalizeGenerateMessage({ hasAssetUrl, rawMessage, status }: { hasAssetUrl: boolean; rawMessage: string | null; status: string | null }) {
+  if (hasAssetUrl && canUseGeneratedAsset(status)) {
+    return "Hệ thống đã tạo video thành công.";
   }
 
   return rawMessage;
+}
+
+function inferMediaType(url: string | null): "image" | "video" {
+  if (!url) return "image";
+
+  try {
+    const pathname = new URL(url).pathname.toLowerCase();
+
+    if ([".mp4", ".mov", ".webm", ".m4v", ".avi"].some((extension) => pathname.endsWith(extension))) {
+      return "video";
+    }
+  } catch {}
+
+  return "image";
 }
 
 function getMimeType(extension: string) {
@@ -242,6 +287,27 @@ function getMimeType(extension: string) {
 
 function isSupportedImageExtension(extension: string) {
   return [".jpg", ".jpeg", ".png", ".webp"].includes(extension.toLowerCase());
+}
+
+function getAudioMimeType(extension: string) {
+  switch (extension.toLowerCase()) {
+    case ".mp3":
+      return "audio/mpeg";
+    case ".wav":
+      return "audio/wav";
+    case ".m4a":
+      return "audio/mp4";
+    case ".aac":
+      return "audio/aac";
+    case ".ogg":
+      return "audio/ogg";
+    default:
+      return "application/octet-stream";
+  }
+}
+
+function isSupportedAudioExtension(extension: string) {
+  return [".mp3", ".wav", ".m4a", ".aac", ".ogg"].includes(extension.toLowerCase());
 }
 
 function isGender(value: string): value is Gender {

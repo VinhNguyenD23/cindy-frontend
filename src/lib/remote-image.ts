@@ -55,7 +55,7 @@ export async function fetchRemoteImageWithRetry(
 
   throw lastError instanceof Error
     ? lastError
-    : new Error("Không thể tải ảnh từ dịch vụ nguồn.");
+    : new Error("Không thể tải video từ dịch vụ nguồn.");
 }
 
 export async function waitForRemoteImageAvailability(targetUrl: string) {

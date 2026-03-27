@@ -32,7 +32,7 @@ export async function composeDemoCampaignImage({
   const context = canvas.getContext("2d");
 
   if (!context) {
-    throw new Error("Thiết bị không hỗ trợ dựng ảnh xem thử.");
+    throw new Error("Thiết bị không hỗ trợ dựng video xem thử.");
   }
 
   const photoUrl = URL.createObjectURL(photoFile);
@@ -49,16 +49,16 @@ export async function composeDemoCampaignImage({
     context.fillStyle = concept.accentColor;
     context.fillRect(0, 0, canvas.width, 230);
 
-    fillRoundedRect(context, 70, 60, 230, 56, 18, "#FFF8F4");
+    fillRoundedRect(context, 70, 60, 230, 56, 18, "#FFFDF6");
     context.fillStyle = concept.accentColor;
     context.font = "700 28px 'Be Vietnam Pro', sans-serif";
     context.fillText("CHIN-SU IMAGE LAB", 96, 96);
 
-    context.fillStyle = "#FFF8F4";
+    context.fillStyle = "#FFFDF6";
     context.font = "800 78px 'Be Vietnam Pro', sans-serif";
     context.fillText(concept.posterTitle, 70, 170);
 
-    context.fillStyle = "#FFE4D9";
+    context.fillStyle = "#FFF0C9";
     context.font = "500 30px 'Be Vietnam Pro', sans-serif";
     context.fillText(
       "Ban xem thu tao anh chien dich ca nhan hoa",
@@ -69,7 +69,7 @@ export async function composeDemoCampaignImage({
     drawCoverImage(context, portrait, 70, 278, 548, 788, 34);
     drawCoverImage(context, conceptImage, 664, 278, 346, 286, 30);
 
-    fillRoundedRect(context, 664, 594, 346, 472, 30, "#FFF8F4");
+    fillRoundedRect(context, 664, 594, 346, 472, 30, "#FFFDF6");
     context.fillStyle = concept.accentColor;
     context.font = "800 46px 'Be Vietnam Pro', sans-serif";
     context.fillText(
@@ -78,19 +78,19 @@ export async function composeDemoCampaignImage({
       674,
     );
 
-    context.fillStyle = "#604648";
+    context.fillStyle = "#75552B";
     context.font = "600 28px 'Be Vietnam Pro', sans-serif";
     context.fillText(getGenderMessage(gender), 694, 722);
 
-    context.fillStyle = "#87595E";
+    context.fillStyle = "#AA7A28";
     context.font = "500 24px 'Be Vietnam Pro', sans-serif";
     context.fillText("Concept da chon", 694, 792);
 
-    context.fillStyle = "#231516";
+    context.fillStyle = "#342417";
     context.font = "700 34px 'Be Vietnam Pro', sans-serif";
     context.fillText(concept.label, 694, 838);
 
-    context.fillStyle = "#6A4B4E";
+    context.fillStyle = "#89693B";
     context.font = "500 24px 'Be Vietnam Pro', sans-serif";
     wrapText(
       context,
@@ -117,11 +117,11 @@ export async function composeDemoCampaignImage({
     context.fillStyle = concept.accentColor;
     context.fillRect(0, 1155, canvas.width, 195);
 
-    context.fillStyle = "#FFF8F4";
+    context.fillStyle = "#FFFDF6";
     context.font = "800 56px 'Be Vietnam Pro', sans-serif";
     context.fillText("Trang demo Chin-su", 70, 1240);
 
-    context.fillStyle = "#FFE1D4";
+    context.fillStyle = "#F9E7B2";
     context.font = "500 28px 'Be Vietnam Pro', sans-serif";
     context.fillText(
       "Anh nay dang duoc tao tu local fallback, san sang thay bang API that sau.",
@@ -142,7 +142,7 @@ export async function composeDemoCampaignImage({
           return;
         }
 
-        reject(new Error("Không thể xuất ảnh xem thử."));
+        reject(new Error("Không thể xuất video xem thử."));
       }, "image/png");
     });
 
@@ -156,7 +156,7 @@ function loadImage(src: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new window.Image();
     image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("Không tải được ảnh minh hoạ."));
+    image.onerror = () => reject(new Error("Không tải được video minh hoạ."));
     image.src = src;
   });
 }
@@ -284,11 +284,11 @@ function getGenderMessage(gender: Gender) {
 function getConceptMessage(conceptId: CampaignConceptId) {
   switch (conceptId) {
     case "rooftop":
-      return "Khong khi tren cao, anh sang thanh pho va nhan vat la tam diem.";
+      return "Nang luong tuoi moi, hinh anh bat mat va than thai tre trung la tam diem.";
     case "home-kitchen":
-      return "Cam giac am ap, gan gui va de lien tuong den bua an gia dinh.";
+      return "Tong the mem mai, cuon hut va goi cam giac quyen ru day bi an.";
     case "bar":
     default:
-      return "Visual dem thanh pho, khoe than thai va nang luong cho demo thuong mai.";
+      return "Visual thanh lich, sang trong va ton len than thai quy phai cho nhan vat.";
   }
 }

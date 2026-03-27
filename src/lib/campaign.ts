@@ -7,6 +7,7 @@ export type Gender = (typeof GENDER_OPTIONS)[number]["value"];
 
 type CampaignConcept = {
   id: string;
+  sourceDirectory: string;
   label: string;
   enabled: boolean;
   kicker: string;
@@ -21,42 +22,45 @@ type CampaignConcept = {
 export const CAMPAIGN_CONCEPTS = [
   {
     id: "bar",
-    label: "Bar",
+    sourceDirectory: "classic",
+    label: "Classic - Quý phái",
     enabled: true,
-    kicker: "Night mood",
+    kicker: "Quý phái",
     description:
-      "Không khí nightlife đậm chất thành thị, phù hợp visual mạnh và nổi bật.",
+      "Tinh thần thanh lịch, chỉn chu và sang trọng cho visual mang cảm giác quý phái.",
     image: "/concepts/bar.svg",
-    posterTitle: "BAR DEM NOI BAT",
-    accentColor: "#A4121F",
-    backgroundColor: "#F7ECE6",
-    panelColor: "#FFD8CF",
+    posterTitle: "CLASSIC QUY PHAI",
+    accentColor: "#D89A16",
+    backgroundColor: "#FBF4E3",
+    panelColor: "#F8E6B9",
   },
   {
     id: "rooftop",
-    label: "Rooftop",
-    enabled: true,
-    kicker: "City lights",
+    sourceDirectory: "rooftop",
+    label: "Passion - Trẻ trung",
+    enabled: false,
+    kicker: "Trẻ trung",
     description:
-      "Khung cảnh trên cao, thoáng, hiện đại và phù hợp các chiến dịch trẻ.",
+      "Năng lượng tươi mới, nổi bật và hiện đại để tạo cảm giác trẻ trung, cuốn hút.",
     image: "/concepts/rooftop.svg",
-    posterTitle: "ROOFTOP CITYLIGHT",
-    accentColor: "#7F1720",
-    backgroundColor: "#F4ECE7",
-    panelColor: "#F4D7D1",
+    posterTitle: "PASSION TRE TRUNG",
+    accentColor: "#E2AC2A",
+    backgroundColor: "#FCF6E8",
+    panelColor: "#F6E2A8",
   },
   {
     id: "home-kitchen",
-    label: "Bếp nhà",
-    enabled: true,
-    kicker: "Warm kitchen",
+    sourceDirectory: "home-kitchen",
+    label: "Secret - Quyến rũ",
+    enabled: false,
+    kicker: "Quyến rũ",
     description:
-      "Ấm áp, gần gũi và mang cảm giác bữa ăn gia đình dễ chạm tới khách hàng.",
+      "Bối cảnh giàu cảm xúc với điểm nhấn mềm mại, bí ẩn và gợi cảm giác quyến rũ.",
     image: "/concepts/home-kitchen.svg",
-    posterTitle: "BEP NHA AM VI",
-    accentColor: "#B61F2A",
-    backgroundColor: "#F8EDE8",
-    panelColor: "#FFE1D4",
+    posterTitle: "SECRET QUYEN RU",
+    accentColor: "#C68D14",
+    backgroundColor: "#FAF1DD",
+    panelColor: "#F3D793",
   },
 ] as const satisfies readonly CampaignConcept[];
 

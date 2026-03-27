@@ -9,7 +9,7 @@ export async function GET(request: Request) {
 
   if (!targetUrl || !isHttpUrl(targetUrl)) {
     return NextResponse.json(
-      { message: "Thiếu URL hợp lệ để tải ảnh." },
+      { message: "Thiếu URL hợp lệ để tải video." },
       { status: 400 },
     );
   }
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
 
     if (!upstreamResponse.ok || !upstreamResponse.body) {
       return NextResponse.json(
-        { message: "Không thể tải ảnh từ URL đã cung cấp." },
+        { message: "Không thể tải video từ URL đã cung cấp." },
         { status: upstreamResponse.status || 502 },
       );
     }
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     });
   } catch {
     return NextResponse.json(
-      { message: "Không thể kết nối tới URL tải ảnh." },
+      { message: "Không thể kết nối tới URL tải video." },
       { status: 502 },
     );
   }

@@ -12,7 +12,7 @@ const beVietnamPro = Be_Vietnam_Pro({
 export const metadata: Metadata = {
   title: "Chin-su Image Campaign Demo",
   description:
-    "Trang demo tạo ảnh chiến dịch cá nhân hoá cho khách hàng Chin-su.",
+    "Trang demo tạo video chiến dịch cá nhân hoá cho khách hàng Chin-su.",
 };
 
 export default function RootLayout({

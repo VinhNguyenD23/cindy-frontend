@@ -41,6 +41,7 @@ type FormState = {
 };
 
 type GeneratedAsset = {
+  kind: "image" | "video";
   src: string;
   revocable: boolean;
   source: "api";
@@ -51,13 +52,15 @@ type GeneratedAsset = {
 type GeneratePayload = {
   provider?: string;
   imageUrl?: string;
+  mediaType?: "image" | "video";
+  url?: string;
   viewUrl?: string;
   expiredAt?: string | null;
   message?: string;
   status?: string;
 };
 
-const GENERATE_ERROR_MESSAGE = "Tạo ảnh gặp sự cố, vui lòng thử lại.";
+const GENERATE_ERROR_MESSAGE = "Tạo video gặp sự cố, vui lòng thử lại.";
 
 const initialFormState: FormState = {
   name: "",
@@ -162,7 +165,7 @@ export function CampaignGenerator() {
       payload.set("phone", form.phone.trim());
       payload.set("gender", form.gender);
       payload.set("concept", form.concept);
-      if (!form.photo) throw new Error("Ảnh tải lên không hợp lệ.");
+      if (!form.photo) throw new Error("Video tải lên không hợp lệ.");
       payload.set("photo", form.photo);
 
       const response = await fetch("/api/generate", {
@@ -176,13 +179,14 @@ export function CampaignGenerator() {
         if (!response.ok) {
           throw new Error(data.message ?? GENERATE_ERROR_MESSAGE);
         }
-        if (data.imageUrl) {
-          const remoteImageUrl = data.viewUrl ?? data.imageUrl;
+        const remoteAssetUrl = data.url ?? data.viewUrl ?? data.imageUrl;
+        if (remoteAssetUrl) {
           updateGeneratedAsset({
-            src: remoteImageUrl,
+            kind: getGeneratedAssetKind(remoteAssetUrl, data.mediaType),
+            src: remoteAssetUrl,
             revocable: false,
             source: "api",
-            viewUrl: remoteImageUrl,
+            viewUrl: remoteAssetUrl,
             expiredAt: data.expiredAt ?? null,
           });
           setNote(getGeneratedSuccessNote());
@@ -194,6 +198,7 @@ export function CampaignGenerator() {
       if (!response.ok) throw new Error(GENERATE_ERROR_MESSAGE);
       const blob = await response.blob();
       updateGeneratedAsset({
+        kind: blob.type.startsWith("video/") ? "video" : "image",
         src: URL.createObjectURL(blob),
         revocable: true,
         source: "api",
@@ -233,20 +238,15 @@ export function CampaignGenerator() {
   }
 
   return (
-    <div
-      className={cn(
-        "grid gap-6",
-        isStepTwoUnlocked ? "lg:grid-cols-[1.05fr_0.95fr]" : "mx-auto max-w-4xl",
-      )}
-    >
+    <div className="mx-auto w-full max-w-[82rem]">
       <Card className="overflow-hidden">
-        <CardHeader className="border-b border-border bg-[#fff5f0] p-6 sm:p-8">
-          <div className="inline-flex w-fit items-center gap-2 rounded-[14px] border border-[#ebc7bc] bg-white px-4 py-2 text-sm font-semibold text-[#7f1a21]">
+        <CardHeader className="border-b border-border bg-[linear-gradient(180deg,_#fffaf0_0%,_#f8efd9_100%)] p-6 sm:p-8">
+          <div className="inline-flex w-fit items-center gap-2 rounded-[14px] border border-[#ead7ac] bg-white px-4 py-2 text-sm font-semibold text-[#a77725]">
             <Sparkles className="h-4 w-4" />
-            Trình tạo ảnh cá nhân hoá
+            Trình tạo video cá nhân hoá
           </div>
           <div className="mt-5 flex flex-wrap gap-3">
-            <div className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+            <div className="inline-flex items-center gap-2 rounded-full bg-[#e4aa18] px-4 py-2 text-sm font-semibold text-[#fffdf7]">
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/18 text-xs">
                 1
               </span>
@@ -256,27 +256,27 @@ export function CampaignGenerator() {
               className={cn(
                 "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold",
                 isStepTwoUnlocked
-                  ? "bg-primary text-primary-foreground"
-                  : "border border-[#e7c8bc] bg-white text-[#9c555b]",
+                  ? "bg-[#e4aa18] text-[#fffdf7]"
+                  : "border border-[#e7d7b4] bg-white text-[#a77725]",
               )}
             >
               <span
                 className={cn(
                   "flex h-6 w-6 items-center justify-center rounded-full text-xs",
-                  isStepTwoUnlocked ? "bg-white/18" : "bg-[#fff1ea]",
+                  isStepTwoUnlocked ? "bg-white/18" : "bg-[#fff7df]",
                 )}
               >
                 2
               </span>
-              Chọn concept và tạo ảnh
+              Chọn concept và tạo video
             </div>
           </div>
           <CardTitle className="mt-5 text-3xl font-extrabold tracking-[-0.03em]">
-            Hoàn tất từng bước để mở phần tạo ảnh
+            Hoàn tất từng bước để mở phần tạo video
           </CardTitle>
           <CardDescription className="max-w-2xl text-base leading-7 text-muted-foreground">
             Ở bước đầu, người dùng chỉ cần điền thông tin cơ bản. Sau đó bước 2
-            sẽ mở ra và cột kết quả bên phải mới xuất hiện.
+            sẽ mở ra và khu vực kết quả sẽ xuất hiện ngay bên dưới.
           </CardDescription>
         </CardHeader>
 
@@ -285,7 +285,7 @@ export function CampaignGenerator() {
             {!isStepTwoUnlocked ? (
               <section className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-primary text-primary-foreground">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-[#e4aa18] text-[#fffdf7]">
                     <UserRound className="h-5 w-5" />
                   </div>
                   <div>
@@ -345,8 +345,8 @@ export function CampaignGenerator() {
                           className={cn(
                             "flex h-14 items-center justify-between rounded-[18px] border px-4 text-sm font-semibold transition-colors",
                             isSelected
-                              ? "border-primary bg-[#fff0ea] text-[#7f1a21]"
-                              : "border-border bg-white text-foreground hover:bg-[#fff4ef]",
+                              ? "border-[#e4aa18] bg-[#fff5dc] text-[#a77725]"
+                              : "border-border bg-white text-foreground hover:bg-[#fff8e8]",
                           )}
                         >
                           <span>{option.label}</span>
@@ -369,7 +369,7 @@ export function CampaignGenerator() {
                 </div>
 
                 {error ? (
-                  <p className="rounded-[16px] border border-[#e5b4b4] bg-[#fff1f1] px-4 py-3 text-sm font-medium text-[#8d2027]">
+                  <p className="rounded-[16px] border border-[#e7c7aa] bg-[#fff7e6] px-4 py-3 text-sm font-medium text-[#8a5a16]">
                     {error}
                   </p>
                 ) : null}
@@ -382,15 +382,15 @@ export function CampaignGenerator() {
                 className="space-y-6"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-primary text-primary-foreground">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-[#e4aa18] text-[#fffdf7]">
                     <Sparkles className="h-5 w-5" />
                   </div>
                   <div>
                     <h2 className="text-xl font-bold tracking-[-0.02em]">
-                      2. Chọn concept và tạo ảnh
+                      2. Chọn concept và tạo video
                     </h2>
                     <p className="text-sm text-muted-foreground">
-                      Bước 2 đã mở. Chọn concept, tải ảnh và bắt đầu tạo ảnh.
+                      Bước 2 đã mở. Chọn concept, tải video và bắt đầu tạo video.
                     </p>
                   </div>
                 </div>
@@ -418,25 +418,25 @@ export function CampaignGenerator() {
                           disabled={isDisabled}
                           aria-disabled={isDisabled}
                           className={cn(
-                            "relative flex flex-col items-center rounded-[28px] border border-transparent px-3 py-2 text-center transition-transform transition-colors",
+                            "relative flex flex-col items-center rounded-[28px] border border-transparent px-3 py-3 text-center transition-transform transition-colors",
                             isDisabled
                               ? "cursor-not-allowed opacity-50"
                               : isSelected
-                              ? "bg-[#fff0ea] shadow-[0_12px_24px_rgba(164,18,31,0.08)]"
-                              : "bg-transparent hover:bg-[#fff4ef]",
+                              ? "bg-[#fff5dc] shadow-[0_12px_24px_rgba(196,145,24,0.14)]"
+                              : "bg-transparent hover:bg-[#fff8e8]",
                           )}
                         >
                           {isDisabled ? (
-                            <span className="absolute top-2 right-2 rounded-full border border-[#e5c3b8] bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#9c555b]">
+                            <span className="absolute top-2 right-2 rounded-full border border-[#e7d1a6] bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#a77725]">
                               Tạm tắt
                             </span>
                           ) : null}
                           <div
                             className={cn(
-                              "relative h-36 w-36 overflow-hidden rounded-full border-4 bg-[#f3e4dd]",
+                              "relative h-36 w-36 overflow-hidden rounded-full border-4 bg-[#f7edd1]",
                               isSelected
-                                ? "border-primary"
-                                : "border-[#ead1c8]",
+                                ? "border-[#e4aa18]"
+                                : "border-[#ead8ab]",
                             )}
                           >
                             <Image
@@ -444,13 +444,13 @@ export function CampaignGenerator() {
                               alt={`Concept ${concept.label}`}
                               fill
                               sizes="144px"
-                              className="object-cover"
+                              className="object-cover saturate-[0.82] hue-rotate-[6deg]"
                             />
                           </div>
                           <h3
                             className={cn(
-                              "mt-4 text-2xl font-extrabold tracking-[-0.03em]",
-                              isSelected ? "text-primary" : "text-foreground",
+                              "mt-4 text-lg font-extrabold tracking-[-0.03em] sm:text-xl",
+                              isSelected ? "text-[#c08d12]" : "text-foreground",
                             )}
                           >
                             {concept.label}
@@ -464,66 +464,75 @@ export function CampaignGenerator() {
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm font-semibold text-foreground">
-                      Tải ảnh chân dung
+                      Tải video chân dung
                     </p>
                     <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                      Nên chọn ảnh sáng, rõ mặt để kết quả demo thuyết phục hơn.
+                      Có thể dùng video hoặc file rõ mặt để hệ thống xem trước nội dung tải lên.
                     </p>
                   </div>
 
                   <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                     <label
                       htmlFor="customer-photo"
-                      className="flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-[28px] border-2 border-dashed border-[#d8b6ac] bg-[#fff7f3] p-6 text-center transition-colors hover:bg-[#fff2ec]"
+                      className="flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-[28px] border-2 border-dashed border-[#e2cd98] bg-[#fffaf0] p-6 text-center transition-colors hover:bg-[#fff3d6]"
                     >
-                      <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-primary text-primary-foreground">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-[#e4aa18] text-[#fffdf7]">
                         <ImageUp className="h-6 w-6" />
                       </div>
                       <p className="mt-4 text-lg font-bold">
-                        Chạm để tải ảnh từ điện thoại hoặc máy tính
+                        Chạm để tải video từ điện thoại hoặc máy tính
                       </p>
                       <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-                        Hỗ trợ JPG, PNG, WEBP. Hệ thống sẽ dùng ảnh này để tạo
-                        visual cho concept đã chọn.
+                        Hỗ trợ MP4, MOV, WEBM và cả JPG, PNG, WEBP khi cần. Hệ
+                        thống sẽ dùng tệp này cho bước xử lý tiếp theo.
                       </p>
-                      <span className="mt-4 rounded-[14px] border border-[#e4bfb3] bg-white px-4 py-2 text-sm font-semibold text-[#7f1a21]">
-                        Chọn ảnh
+                      <span className="mt-4 rounded-[14px] border border-[#e4cf9c] bg-white px-4 py-2 text-sm font-semibold text-[#a77725]">
+                        Chọn video
                       </span>
                     </label>
                     <input
                       id="customer-photo"
                       type="file"
-                      accept="image/*"
+                      accept="image/*,video/*"
                       className="sr-only"
                       onChange={handlePhotoChange}
                     />
 
-                    <div className="rounded-[28px] border border-border bg-[#fffaf7] p-4">
-                      <p className="text-sm font-semibold text-[#7f1a21]">
-                        Xem trước ảnh tải lên
+                    <div className="rounded-[28px] border border-border bg-[#fffcf4] p-4">
+                      <p className="text-sm font-semibold text-[#a77725]">
+                        Xem trước video tải lên
                       </p>
-                      <div className="mt-3 overflow-hidden rounded-[22px] border border-[#ead3cb] bg-[#f0dfd7]">
+                      <div className="mt-3 overflow-hidden rounded-[22px] border border-[#eadcb8] bg-[#f6ecd1]">
                         {previewUrl ? (
-                          <div className="relative aspect-[4/5] w-full">
-                            <Image
+                          isVideoFile(form.photo) ? (
+                            <video
                               src={previewUrl}
-                              alt="Ảnh khách đã tải lên"
-                              fill
-                              unoptimized
-                              sizes="(min-width: 1024px) 24rem, 100vw"
-                              className="object-cover"
+                              controls
+                              playsInline
+                              className="aspect-[4/5] w-full bg-[#f6ecd1] object-contain"
                             />
-                          </div>
+                          ) : (
+                            <div className="relative aspect-[4/5] w-full">
+                              <Image
+                                src={previewUrl}
+                                alt="Video khách đã tải lên"
+                                fill
+                                unoptimized
+                                sizes="(min-width: 1024px) 24rem, 100vw"
+                                className="object-contain"
+                              />
+                            </div>
+                          )
                         ) : (
                           <div className="flex aspect-[4/5] items-center justify-center p-6 text-center text-sm leading-6 text-muted-foreground">
-                            Ảnh tải lên sẽ xuất hiện ở đây.
+                            Video tải lên sẽ xuất hiện ở đây.
                           </div>
                         )}
                       </div>
                       <p className="mt-3 text-xs leading-5 text-muted-foreground">
                         {form.photo
                           ? `Đã chọn: ${form.photo.name}`
-                          : "Chưa có ảnh nào được tải lên."}
+                          : "Chưa có video nào được tải lên."}
                       </p>
                     </div>
                   </div>
@@ -538,17 +547,17 @@ export function CampaignGenerator() {
                     {isGenerating ? (
                       <>
                         <LoaderCircle className="h-5 w-5 animate-spin" />
-                        Đang tạo ảnh...
+                        Đang tạo video...
                       </>
                     ) : (
                       <>
                         <Sparkles className="h-5 w-5" />
-                        Tạo ảnh ngay
+                        Tạo video ngay
                       </>
                     )}
                   </Button>
                   {error ? (
-                    <p className="rounded-[16px] border border-[#e5b4b4] bg-[#fff1f1] px-4 py-3 text-sm font-medium text-[#8d2027]">
+                    <p className="rounded-[16px] border border-[#e7c7aa] bg-[#fff7e6] px-4 py-3 text-sm font-medium text-[#8a5a16]">
                       {error}
                     </p>
                   ) : null}
@@ -556,141 +565,142 @@ export function CampaignGenerator() {
               </section>
             ) : null}
           </form>
+
+          {isStepTwoUnlocked ? (
+            <section className="mt-8 border-t border-border pt-8">
+              <div className="mb-5">
+                <h2 className="text-2xl font-extrabold tracking-[-0.03em]">
+                  Khu vực kết quả
+                </h2>
+                <p className="mt-2 text-base leading-7 text-muted-foreground">
+                  Kết quả sẽ hiện ở đây ngay sau khi xử lý xong.
+                </p>
+              </div>
+
+              <div className="space-y-5">
+                <div className="rounded-[26px] border border-[#e7d5aa] bg-[#fff8e8] p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="relative h-20 w-24 overflow-hidden rounded-[16px] border border-[#ead7ad] bg-[#f6ecd1]">
+                      <Image
+                        src={selectedConcept.image}
+                        alt={`Minh hoạ concept ${selectedConcept.label}`}
+                        fill
+                        sizes="96px"
+                        className="object-cover saturate-[0.82] hue-rotate-[6deg]"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#a77725]">
+                        Concept đã chọn
+                      </p>
+                      <h3 className="mt-1 text-lg font-bold">
+                        {selectedConcept.label}
+                      </h3>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-[28px] border border-[#e6d4aa] bg-[#f5e8c7]">
+                  {generatedAsset ? (
+                    <div className="relative aspect-[4/5] w-full">
+                      {generatedAsset.kind === "video" ? (
+                        <video
+                          src={generatedAsset.src}
+                          controls
+                          playsInline
+                          className="h-full w-full bg-[#f5e8c7] object-contain"
+                        />
+                      ) : (
+                        <Image
+                          src={generatedAsset.src}
+                          alt={`Kết quả video cho concept ${selectedConcept.label}`}
+                          fill
+                          unoptimized
+                          sizes="(min-width: 1024px) 72rem, 100vw"
+                          className="object-contain"
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex aspect-[4/5] flex-col items-center justify-center gap-4 p-8 text-center">
+                      {isGenerating ? (
+                        <>
+                          <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-[#e4aa18] text-[#fffdf7]">
+                            <LoaderCircle className="h-8 w-8 animate-spin" />
+                          </div>
+                          <div>
+                            <p className="text-lg font-bold">
+                              Hệ thống đang xử lý video
+                            </p>
+                            <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+                              Trang sẽ giữ người dùng ở đúng màn hình này cho đến
+                              khi video sẵn sàng.
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-white text-[#c08d12] shadow-sm">
+                            <Sparkles className="h-8 w-8" />
+                          </div>
+                          <div>
+                            <p className="text-lg font-bold">
+                              Chưa có video được tạo
+                            </p>
+                            <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+                              Sau khi bấm nút tạo video, kết quả sẽ hiển thị ở đây
+                              để khách xem ngay.
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {generatedAsset?.expiredAt ? (
+                  <div className="rounded-[20px] border border-[#e7d5aa] bg-[#fffcf4] p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#a77725]">
+                      Expired At
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-foreground">
+                      {formatExpiration(generatedAsset.expiredAt)}
+                    </p>
+                  </div>
+                ) : null}
+
+                {note ? (
+                  <p className="rounded-[16px] border border-[#d9c594] bg-[#fff7df] px-4 py-3 text-sm font-medium text-[#7b5a1d]">
+                    {note}
+                  </p>
+                ) : null}
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Button
+                    type="button"
+                    size="lg"
+                    className="w-full"
+                    disabled={!generatedAsset}
+                    onClick={handleDownload}
+                  >
+                    <Download className="h-5 w-5" />
+                    Download
+                  </Button>
+                  <Button
+                    type="button"
+                    size="lg"
+                    variant="outline"
+                    disabled
+                  >
+                    <Facebook className="h-5 w-5" />
+                    Share on Facebook
+                  </Button>
+                </div>
+              </div>
+            </section>
+          ) : null}
         </CardContent>
       </Card>
-
-      {isStepTwoUnlocked ? (
-        <div className="self-start lg:sticky lg:top-6">
-          <Card className="overflow-hidden">
-            <CardHeader className="border-b border-border bg-[#f7ebe5] p-6">
-              <CardTitle className="text-2xl font-extrabold tracking-[-0.03em]">
-                Khu vực kết quả
-              </CardTitle>
-              <CardDescription className="text-base leading-7 text-muted-foreground">
-                Kết quả sẽ hiện ở đây ngay sau khi xử lý xong.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5 p-6">
-              <div className="rounded-[26px] border border-[#e4c2b7] bg-[#fff4ee] p-4">
-                <div className="flex items-center gap-3">
-                  <div className="relative h-20 w-24 overflow-hidden rounded-[16px] border border-[#e7c6bb] bg-[#f0dfd7]">
-                    <Image
-                      src={selectedConcept.image}
-                      alt={`Minh hoạ concept ${selectedConcept.label}`}
-                      fill
-                      sizes="96px"
-                      className="object-cover"
-                    />
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9c555b]">
-                      Concept đã chọn
-                    </p>
-                    <h3 className="mt-1 text-lg font-bold">
-                      {selectedConcept.label}
-                    </h3>
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                      {selectedConcept.description}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="overflow-hidden rounded-[28px] border border-[#e2c0b5] bg-[#f1ddd5]">
-                {generatedAsset ? (
-                  <div className="relative aspect-[4/5] w-full">
-                    <Image
-                      src={generatedAsset.src}
-                      alt={`Kết quả ảnh cho concept ${selectedConcept.label}`}
-                      fill
-                      unoptimized
-                      sizes="(min-width: 1024px) 28rem, 100vw"
-                      className="object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex aspect-[4/5] flex-col items-center justify-center gap-4 p-8 text-center">
-                    {isGenerating ? (
-                      <>
-                        <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-primary text-primary-foreground">
-                          <LoaderCircle className="h-8 w-8 animate-spin" />
-                        </div>
-                        <div>
-                          <p className="text-lg font-bold">
-                            Hệ thống đang xử lý ảnh
-                          </p>
-                          <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-                            Trang sẽ giữ người dùng ở đúng màn hình này cho đến
-                            khi ảnh sẵn sàng.
-                          </p>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex h-16 w-16 items-center justify-center rounded-[20px] bg-white text-primary shadow-sm">
-                          <Sparkles className="h-8 w-8" />
-                        </div>
-                        <div>
-                          <p className="text-lg font-bold">
-                            Chưa có ảnh được tạo
-                          </p>
-                          <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-                            Sau khi bấm nút tạo ảnh, kết quả sẽ hiển thị ở đây
-                            để khách xem ngay.
-                          </p>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {generatedAsset?.expiredAt ? (
-                <div className="rounded-[20px] border border-[#e4c2b7] bg-[#fffaf7] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#9c555b]">
-                    Expired At
-                  </p>
-                  <p className="mt-2 text-sm font-medium text-foreground">
-                    {formatExpiration(generatedAsset.expiredAt)}
-                  </p>
-                </div>
-              ) : null}
-
-              {note ? (
-                <p
-                  className={cn(
-                    "rounded-[16px] border border-[#cbd9c4] bg-[#f3f8ef] px-4 py-3 text-sm font-medium text-[#426033]",
-                  )}
-                >
-                  {note}
-                </p>
-              ) : null}
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Button
-                  type="button"
-                  size="lg"
-                  className="w-full"
-                  disabled={!generatedAsset}
-                  onClick={handleDownload}
-                >
-                  <Download className="h-5 w-5" />
-                  Download
-                </Button>
-                <Button
-                  type="button"
-                  size="lg"
-                  variant="outline"
-                  disabled
-                >
-                  <Facebook className="h-5 w-5" />
-                  Share on Facebook
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -707,8 +717,12 @@ function validateStepOne(form: FormState) {
 function validateForm(form: FormState) {
   const stepOneError = validateStepOne(form);
   if (stepOneError) return stepOneError;
-  if (!form.photo) return "Vui lòng tải ảnh của khách trước khi tạo ảnh.";
+  if (!form.photo) return "Vui lòng tải video của khách trước khi tạo video.";
   return null;
+}
+
+function isVideoFile(file: File | null) {
+  return Boolean(file?.type?.startsWith("video/"));
 }
 
 function slugify(value: string) {
@@ -741,7 +755,7 @@ function formatExpiration(value?: string | null) {
 }
 
 function getGeneratedSuccessNote() {
-  return "Đã gen hình ảnh thành công.";
+  return "Đã tạo video thành công.";
 }
 
 function getDownloadFileName(
@@ -752,7 +766,7 @@ function getDownloadFileName(
   const baseName = `chinsu-${slugify(customerName) || "khach-hang"}-${conceptId}`;
 
   if (generatedAsset.src.startsWith("blob:") || generatedAsset.src.startsWith("data:")) {
-    return `${baseName}.png`;
+    return `${baseName}${generatedAsset.kind === "video" ? ".mp4" : ".png"}`;
   }
 
   try {
@@ -760,7 +774,7 @@ function getDownloadFileName(
     const extension = pathExtensionOrDefault(pathname);
     return `${baseName}${extension}`;
   } catch {
-    return `${baseName}.png`;
+    return `${baseName}${generatedAsset.kind === "video" ? ".mp4" : ".png"}`;
   }
 }
 
@@ -768,6 +782,22 @@ function pathExtensionOrDefault(pathname: string) {
   const lastSegment = pathname.split("/").pop() ?? "";
   const matchedExtension = /\.([a-zA-Z0-9]+)$/.exec(lastSegment);
   return matchedExtension ? `.${matchedExtension[1].toLowerCase()}` : ".png";
+}
+
+function getGeneratedAssetKind(
+  assetUrl: string,
+  mediaType?: "image" | "video",
+) {
+  if (mediaType) return mediaType;
+
+  try {
+    const pathname = new URL(assetUrl).pathname.toLowerCase();
+    if ([".mp4", ".mov", ".webm", ".m4v", ".avi"].some((extension) => pathname.endsWith(extension))) {
+      return "video";
+    }
+  } catch {}
+
+  return "image";
 }
 
 function triggerDownload(url: string, fileName: string) {
