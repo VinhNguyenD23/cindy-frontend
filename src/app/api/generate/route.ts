@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import { GENDER_OPTIONS, type CampaignConceptId, type Gender, isCampaignConceptEnabled, isCampaignConceptId } from "@/lib/campaign";
 import { waitForRemoteImageAvailability } from "@/lib/remote-image";
 
-const DEFAULT_ENDPOINT = "https://n8n.taskracer.id.vn/webhook/upload-images";
+const DEFAULT_ENDPOINT = "https://n8n.taskracer.id.vn/webhook/cindy-workflow";
 const PUBLIC_SOURCE_ROOT_DIR = path.join(process.cwd(), "public", "source");
 
 type JsonRecord = Record<string, unknown>;
@@ -98,8 +98,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json(
         {
-          message:
-            normalizedResponse.message ?? "Tạo ảnh gặp sự cố, vui lòng thử lại.",
+          message: normalizedResponse.message ?? "Tạo ảnh gặp sự cố, vui lòng thử lại.",
           provider: normalizedResponse.provider,
           status: normalizedResponse.status,
           upstreamStatus: upstreamResponse.status,
