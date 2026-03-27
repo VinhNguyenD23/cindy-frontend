@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import {
-  Check,
   Download,
   Facebook,
   ImageUp,
@@ -15,7 +14,6 @@ import {
 import {
   CAMPAIGN_CONCEPTS,
   DEFAULT_CAMPAIGN_CONCEPT_ID,
-  GENDER_OPTIONS,
   type CampaignConceptId,
   type Gender,
   getConceptById,
@@ -65,7 +63,7 @@ const GENERATE_ERROR_MESSAGE = "Tạo video gặp sự cố, vui lòng thử l�
 const initialFormState: FormState = {
   name: "",
   phone: "",
-  gender: "male",
+  gender: "female",
   concept: DEFAULT_CAMPAIGN_CONCEPT_ID,
   photo: null,
 };
@@ -163,7 +161,7 @@ export function CampaignGenerator() {
       const payload = new FormData();
       payload.set("name", form.name.trim());
       payload.set("phone", form.phone.trim());
-      payload.set("gender", form.gender);
+      payload.set("gender", "female");
       payload.set("concept", form.concept);
       if (!form.photo) throw new Error("Video tải lên không hợp lệ.");
       payload.set("photo", form.photo);
@@ -327,33 +325,6 @@ export function CampaignGenerator() {
                         }
                       />
                     </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label>Giới tính</Label>
-                  <div className="grid grid-cols-2 gap-3" role="radiogroup">
-                    {GENDER_OPTIONS.map((option) => {
-                      const isSelected = form.gender === option.value;
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          role="radio"
-                          aria-checked={isSelected}
-                          onClick={() => updateField("gender", option.value)}
-                          className={cn(
-                            "flex h-14 items-center justify-between rounded-[18px] border px-4 text-sm font-semibold transition-colors",
-                            isSelected
-                              ? "border-[#e4aa18] bg-[#fff5dc] text-[#a77725]"
-                              : "border-border bg-white text-foreground hover:bg-[#fff8e8]",
-                          )}
-                        >
-                          <span>{option.label}</span>
-                          {isSelected ? <Check className="h-4 w-4" /> : null}
-                        </button>
-                      );
-                    })}
                   </div>
                 </div>
 
