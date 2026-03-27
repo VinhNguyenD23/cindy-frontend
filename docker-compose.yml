@@ -1,0 +1,15 @@
+services:
+  app:
+    container_name: cindy-frontend-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    init: true
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      IMAGE_GENERATE_ENDPOINT: ${IMAGE_GENERATE_ENDPOINT:-https://n8n.taskracer.id.vn/webhook/upload-images}
