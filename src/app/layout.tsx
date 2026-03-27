@@ -10,9 +10,9 @@ const beVietnamPro = Be_Vietnam_Pro({
 });
 
 export const metadata: Metadata = {
-  title: "Chin-su Image Campaign Demo",
+  title: "Cindy Video Campaign Demo",
   description:
-    "Trang demo tạo video chiến dịch cá nhân hoá cho khách hàng Chin-su.",
+    "Trang demo tạo video chiến dịch cá nhân hoá cho khách hàng Cindy.",
 };
 
 export default function RootLayout({

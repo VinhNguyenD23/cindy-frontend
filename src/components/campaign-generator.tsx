@@ -763,7 +763,7 @@ function getDownloadFileName(
   conceptId: CampaignConceptId,
   generatedAsset: GeneratedAsset,
 ) {
-  const baseName = `chinsu-${slugify(customerName) || "khach-hang"}-${conceptId}`;
+  const baseName = `cindy-${slugify(customerName) || "khach-hang"}-${conceptId}`;
 
   if (generatedAsset.src.startsWith("blob:") || generatedAsset.src.startsWith("data:")) {
     return `${baseName}${generatedAsset.kind === "video" ? ".mp4" : ".png"}`;

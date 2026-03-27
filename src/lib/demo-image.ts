@@ -119,7 +119,7 @@ export async function composeDemoCampaignImage({
 
     context.fillStyle = "#FFFDF6";
     context.font = "800 56px 'Be Vietnam Pro', sans-serif";
-    context.fillText("Trang demo Chin-su", 70, 1240);
+    context.fillText("Trang demo Cindy", 70, 1240);
 
     context.fillStyle = "#F9E7B2";
     context.font = "500 28px 'Be Vietnam Pro', sans-serif";
