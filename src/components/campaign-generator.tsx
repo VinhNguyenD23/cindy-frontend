@@ -163,7 +163,7 @@ export function CampaignGenerator() {
       payload.set("phone", form.phone.trim());
       payload.set("gender", "female");
       payload.set("concept", form.concept);
-      if (!form.photo) throw new Error("Video tải lên không hợp lệ.");
+      if (!form.photo) throw new Error("Ảnh tải lên không hợp lệ.");
       payload.set("photo", form.photo);
 
       const response = await fetch("/api/generate", {
@@ -361,7 +361,7 @@ export function CampaignGenerator() {
                       2. Chọn concept và tạo video
                     </h2>
                     <p className="text-sm text-muted-foreground">
-                      Bước 2 đã mở. Chọn concept, tải video và bắt đầu tạo video.
+                      Bước 2 đã mở. Chọn concept, tải ảnh và bắt đầu tạo video.
                     </p>
                   </div>
                 </div>
@@ -435,10 +435,10 @@ export function CampaignGenerator() {
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm font-semibold text-foreground">
-                      Tải video chân dung
+                      Tải ảnh chân dung
                     </p>
                     <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                      Có thể dùng video hoặc file rõ mặt để hệ thống xem trước nội dung tải lên.
+                      Chọn một ảnh rõ mặt để hệ thống xem trước và dùng cho bước xử lý tiếp theo.
                     </p>
                   </div>
 
@@ -451,59 +451,50 @@ export function CampaignGenerator() {
                         <ImageUp className="h-6 w-6" />
                       </div>
                       <p className="mt-4 text-lg font-bold">
-                        Chạm để tải video từ điện thoại hoặc máy tính
+                        Chạm để tải ảnh từ điện thoại hoặc máy tính
                       </p>
                       <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-                        Hỗ trợ MP4, MOV, WEBM và cả JPG, PNG, WEBP khi cần. Hệ
-                        thống sẽ dùng tệp này cho bước xử lý tiếp theo.
+                        Hỗ trợ JPG, PNG, WEBP và các định dạng ảnh phổ biến khác.
+                        Hệ thống sẽ dùng ảnh này cho bước xử lý tiếp theo.
                       </p>
                       <span className="mt-4 rounded-[14px] border border-[#e4cf9c] bg-white px-4 py-2 text-sm font-semibold text-[#a77725]">
-                        Chọn video
+                        Chọn ảnh
                       </span>
                     </label>
                     <input
                       id="customer-photo"
                       type="file"
-                      accept="image/*,video/*"
+                      accept="image/*"
                       className="sr-only"
                       onChange={handlePhotoChange}
                     />
 
                     <div className="rounded-[28px] border border-border bg-[#fffcf4] p-4">
                       <p className="text-sm font-semibold text-[#a77725]">
-                        Xem trước video tải lên
+                        Xem trước ảnh tải lên
                       </p>
                       <div className="mt-3 overflow-hidden rounded-[22px] border border-[#eadcb8] bg-[#f6ecd1]">
                         {previewUrl ? (
-                          isVideoFile(form.photo) ? (
-                            <video
+                          <div className="relative aspect-[4/5] w-full">
+                            <Image
                               src={previewUrl}
-                              controls
-                              playsInline
-                              className="aspect-[4/5] w-full bg-[#f6ecd1] object-contain"
+                              alt="Ảnh khách đã tải lên"
+                              fill
+                              unoptimized
+                              sizes="(min-width: 1024px) 24rem, 100vw"
+                              className="object-contain"
                             />
-                          ) : (
-                            <div className="relative aspect-[4/5] w-full">
-                              <Image
-                                src={previewUrl}
-                                alt="Video khách đã tải lên"
-                                fill
-                                unoptimized
-                                sizes="(min-width: 1024px) 24rem, 100vw"
-                                className="object-contain"
-                              />
-                            </div>
-                          )
+                          </div>
                         ) : (
                           <div className="flex aspect-[4/5] items-center justify-center p-6 text-center text-sm leading-6 text-muted-foreground">
-                            Video tải lên sẽ xuất hiện ở đây.
+                            Ảnh tải lên sẽ xuất hiện ở đây.
                           </div>
                         )}
                       </div>
                       <p className="mt-3 text-xs leading-5 text-muted-foreground">
                         {form.photo
                           ? `Đã chọn: ${form.photo.name}`
-                          : "Chưa có video nào được tải lên."}
+                          : "Chưa có ảnh nào được tải lên."}
                       </p>
                     </div>
                   </div>
@@ -688,12 +679,8 @@ function validateStepOne(form: FormState) {
 function validateForm(form: FormState) {
   const stepOneError = validateStepOne(form);
   if (stepOneError) return stepOneError;
-  if (!form.photo) return "Vui lòng tải video của khách trước khi tạo video.";
+  if (!form.photo) return "Vui lòng tải ảnh của khách trước khi tạo video.";
   return null;
-}
-
-function isVideoFile(file: File | null) {
-  return Boolean(file?.type?.startsWith("video/"));
 }
 
 function slugify(value: string) {
