@@ -36,9 +36,9 @@ export const CAMPAIGN_CONCEPTS = [
   },
   {
     id: "rooftop",
-    sourceDirectory: "rooftop",
+    sourceDirectory: "Passion",
     label: "Passion - Trẻ trung",
-    enabled: false,
+    enabled: true,
     kicker: "Trẻ trung",
     description:
       "Năng lượng tươi mới, nổi bật và hiện đại để tạo cảm giác trẻ trung, cuốn hút.",
@@ -50,9 +50,9 @@ export const CAMPAIGN_CONCEPTS = [
   },
   {
     id: "home-kitchen",
-    sourceDirectory: "home-kitchen",
+    sourceDirectory: "Secret",
     label: "Secret - Quyến rũ",
-    enabled: false,
+    enabled: true,
     kicker: "Quyến rũ",
     description:
       "Bối cảnh giàu cảm xúc với điểm nhấn mềm mại, bí ẩn và gợi cảm giác quyến rũ.",
